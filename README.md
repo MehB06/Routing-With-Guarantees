@@ -46,8 +46,7 @@ recorded per-query cost.
 | Instruction following | ArenaHard (`arenahard`) | 750 | LLM judge |
 | Tool use | τ²-Bench (`tau2`) | 278 | Success rate |
 
-All evaluations are 0-shot. A score of at least 0.5 counts as correct
-(ArenaHard's judge gives 0.5 for ties).
+All evaluations are 0-shot.
 
 ### Download
 
@@ -59,27 +58,34 @@ All evaluations are 0-shot. A score of at least 0.5 counts as correct
    cd data/raw && tar -xzf bench-release.tar.gz
 ```
 
+   This creates `data/raw/bench-release/`. The release also contains other
+   datasets and models; the build step selects the ones above.
+
 ### Build
 
 ```bash
 pip install -r requirements.txt
-python data/data_loader.py
+python data/data_processing.py
 ```
 
 This selects the 129 performance-cost result files from the release and
 writes `data/processed/data.parquet`: one row per (query, model), with
 columns `dataset_id`, `record_index`, `model`, `prompt`, `score`, `cost`.
 
+Expected output: `Saved data.parquet: 161520 rows, 12446 queries, 129 files`.
 
 ### Conventions and data notes
 
 - **Query key:** `(dataset_id, record_index)`. Indices start at 1.
-- **Correctness:** a score of at least 0.5 counts as correct.
-  Scores of 0.5 occur only in ArenaHard (2,149 rows, judge ties).
+- **Correctness:** a score of at least 0.5 counts as correct. Scores of
+  0.5 occur only in ArenaHard (2,149 rows, judge ties).
 - **Missing pair:** `gpt-5-chat` has no τ²-Bench results in the release
-  (278 queries), the missing pairs are never filled in.
+  (278 queries). In the loaded matrices these cells count as not correct
+  and have no cost (`NaN`), so cost averages use `np.nanmean`.
 - **Prompt variants:** 2 queries (`arenahard` 103, `hle` 1494) have a
-  slightly different prompt for one model.
+  slightly different prompt for one model. One version is kept per query;
+  the difference is cosmetic.
 - **Zero costs:** 2,226 rows (1.4%) have a cost of 0. Most (2,088) are
-  scored 0 and are likely failed calls; 132 are correct.They are kept 
-  as recorded, so a few models look slightly cheaper than they are.
+  scored 0 and are likely failed calls; 132 are correct gpt-5 answers on
+  HLE with no recorded cost. They are kept, so a few models
+  look slightly cheaper than they are.
