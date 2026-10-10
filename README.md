@@ -59,6 +59,27 @@ All evaluations are 0-shot. A score of at least 0.5 counts as correct
    cd data/raw && tar -xzf bench-release.tar.gz
 ```
 
-   This creates `data/raw/bench-release/<dataset>/<split>/<model>/<file>.json`.
-   The release also contains other datasets and models; the loader selects
-   the ones above.
+### Build
+
+```bash
+pip install -r requirements.txt
+python data/data_loader.py
+```
+
+This selects the 129 performance-cost result files from the release and
+writes `data/processed/data.parquet`: one row per (query, model), with
+columns `dataset_id`, `record_index`, `model`, `prompt`, `score`, `cost`.
+
+
+### Conventions and data notes
+
+- **Query key:** `(dataset_id, record_index)`. Indices start at 1.
+- **Correctness:** a score of at least 0.5 counts as correct.
+  Scores of 0.5 occur only in ArenaHard (2,149 rows, judge ties).
+- **Missing pair:** `gpt-5-chat` has no τ²-Bench results in the release
+  (278 queries), the missing pairs are never filled in.
+- **Prompt variants:** 2 queries (`arenahard` 103, `hle` 1494) have a
+  slightly different prompt for one model.
+- **Zero costs:** 2,226 rows (1.4%) have a cost of 0. Most (2,088) are
+  scored 0 and are likely failed calls; 132 are correct.They are kept 
+  as recorded, so a few models look slightly cheaper than they are.
