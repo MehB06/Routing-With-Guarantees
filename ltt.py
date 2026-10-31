@@ -13,3 +13,11 @@ def fixed_sequence_test(pvalues: np.ndarray, delta: float) -> int:
             break
         count += 1
     return count
+
+def calibrate(losses: np.ndarray, alpha: float, delta: float) -> int | None:
+    """Index of the last certified lambda (we order the columns from safest to riskiest), or None if no lambda is certified."""
+    n = losses.shape[0]
+    failures = losses.sum(axis=0)
+    pvalues = binomial_pvalue(failures, n, alpha)
+    k = fixed_sequence_test(pvalues, delta)
+    return k-1 if k > 0 else None
