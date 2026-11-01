@@ -1,5 +1,8 @@
 import numpy as np
 
+REFERENCE = "gemini-2.5-pro"
+GRID = np.round(np.linspace(1, 0, 101), 2)
+
 def split(datasets: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Row indices for train, calibration and test (60/20/20), shuffled within each dataset"""
     rng = np.random.default_rng(seed)
@@ -27,3 +30,12 @@ def route(scores: np.ndarray, available: np.ndarray, order: list[int], reference
         choice[accept] = j
         undecided &= ~accept
     return choice
+
+def loss_matrix(scores: np.ndarray, available: np.ndarray, order: list[int], reference: int, correct: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """Loss per query (rows) and lambda in GRID (columns): the routed model was wrong where target was right"""
+    rows = np.arange(len(scores))
+    columns = []
+    for lam in GRID:
+        choice = route(scores, available, order, reference, lam)
+        columns.append(~correct[rows, choice] & target)
+    return np.column_stack(columns)
