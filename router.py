@@ -1,5 +1,6 @@
 import numpy as np
 from data.data_processing import PROCESSED_DIR
+from sklearn.neighbors import NearestNeighbors
 
 REFERENCE = "gemini-2.5-pro"
 EMBEDDINGS_PATH = PROCESSED_DIR / "embeddings.npy"
@@ -51,3 +52,12 @@ def load_embeddings(prompts: list[str]) -> np.ndarray:
     embeddings = model.encode(prompts, batch_size=64, show_progress_bar=True, normalize_embeddings=True)
     np.save(EMBEDDINGS_PATH, embeddings)
     return embeddings
+
+def fit_scorer(embeddings: np.ndarray, correct: np.ndarray, available: np.ndarray, train: np.ndarray, k: int = 40) -> np.ndarray:
+    """Score per query and model: the share of its k nearest training queries that the model got right"""
+    knn = NearestNeighbors(n_neighbors=k).fit(embeddings[train])
+    _, idx = knn.kneighbors(embeddings)
+    neighbours = train[idx]
+    right = correct[neighbours].sum(axis=1)
+    seen = available[neighbours].sum(axis=1)
+    return right / np.maximum(seen, 1)

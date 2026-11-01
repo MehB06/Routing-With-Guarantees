@@ -1,7 +1,7 @@
 import numpy as np
 
 from data.data_loader import load
-from router import candidate_order, route, split, loss_matrix, GRID
+from router import candidate_order, route, split, loss_matrix, GRID, fit_scorer
 
 SCORES = np.array([[0.9, 0.8, 0.5],
                    [0.2, 0.7, 0.5],
@@ -47,3 +47,16 @@ def test_loss_matrix():
     assert GRID[40] == 0.6
     assert losses[:, 40].tolist() == [True, True, False]
     assert losses[:, -1].tolist() == [True, False, False]
+
+def test_fit_scorer():
+    embeddings = np.array([[0.0], [0.1], [1.0], [1.1], [0.05]])
+    correct = np.array([[True, True],
+                        [True, False],
+                        [False, True],
+                        [False, True],
+                        [False, False]])
+    available = np.ones((5, 2), dtype=bool)
+    available[1, 1] = False
+    scores = fit_scorer(embeddings, correct, available, np.array([0, 1, 2, 3]), k=2)
+    assert scores[4].tolist() == [1.0, 1.0]
+    assert scores[2].tolist() == [0.0, 1.0]
