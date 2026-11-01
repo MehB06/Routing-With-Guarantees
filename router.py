@@ -13,3 +13,7 @@ def split(datasets: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, np.n
         test.append(rows[b:])
     return np.concatenate(train), np.concatenate(cal), np.concatenate(test)
 
+def candidate_order(cost: np.ndarray, train: np.ndarray, reference: int) -> list[int]:
+    """Model indices other than the reference, cheapest first by mean cost on the training rows"""
+    mean_cost = np.nanmean(cost[train], axis=0)
+    return [int(j) for j in np.argsort(mean_cost) if j != reference]
