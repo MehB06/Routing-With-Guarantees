@@ -4,3 +4,5 @@ pyarrow
 pytest
 matplotlib
 scipy
+sentence-transformers
+scikit-learn

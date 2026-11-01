@@ -1,6 +1,8 @@
 import numpy as np
+from data.data_processing import PROCESSED_DIR
 
 REFERENCE = "gemini-2.5-pro"
+EMBEDDINGS_PATH = PROCESSED_DIR / "embeddings.npy"
 GRID = np.round(np.linspace(1, 0, 101), 2)
 
 def split(datasets: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -39,3 +41,13 @@ def loss_matrix(scores: np.ndarray, available: np.ndarray, order: list[int], ref
         choice = route(scores, available, order, reference, lam)
         columns.append(~correct[rows, choice] & target)
     return np.column_stack(columns)
+
+def load_embeddings(prompts: list[str]) -> np.ndarray:
+    """MiniLM embedding of every prompt (one row each), computed once and cached to disk"""
+    if EMBEDDINGS_PATH.exists():
+        return np.load(EMBEDDINGS_PATH)
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = model.encode(prompts, batch_size=64, show_progress_bar=True, normalize_embeddings=True)
+    np.save(EMBEDDINGS_PATH, embeddings)
+    return embeddings
