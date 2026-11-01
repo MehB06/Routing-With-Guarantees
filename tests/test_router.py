@@ -1,7 +1,7 @@
 import numpy as np
 
 from data.data_loader import load
-from router import candidate_order, split
+from router import candidate_order, route, split
 
 def test_split():
     datasets = load().queries["dataset_id"].to_numpy()
@@ -24,3 +24,15 @@ def test_candidate_order():
                      [3.0, np.nan, 5.0, 2.0],
                      [0.0, 9.0, 5.0, 2.0]])
     assert candidate_order(cost, np.array([0, 1]), reference=2) == [1, 3, 0]
+
+def test_route():
+    scores = np.array([[0.9, 0.8, 0.5],
+                       [0.2, 0.7, 0.5],
+                       [0.9, 0.3, 0.5]])
+    available = np.array([[True, True, True],
+                          [True, True, True],
+                          [False, True, True]])
+    order, reference = [0, 1], 2
+    assert route(scores, available, order, reference, 1.0).tolist() == [2, 2, 2]
+    assert route(scores, available, order, reference, 0.0).tolist() == [0, 0, 1]
+    assert route(scores, available, order, reference, 0.6).tolist() == [0, 1, 2]

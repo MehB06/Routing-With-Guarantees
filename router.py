@@ -17,3 +17,13 @@ def candidate_order(cost: np.ndarray, train: np.ndarray, reference: int) -> list
     """Model indices other than the reference, cheapest first by mean cost on the training rows"""
     mean_cost = np.nanmean(cost[train], axis=0)
     return [int(j) for j in np.argsort(mean_cost) if j != reference]
+
+def route(scores: np.ndarray, available: np.ndarray, order: list[int], reference: int, lam: float) -> np.ndarray:
+    """Chosen model per query: the first available candidate in order with score >= lam, else the reference model"""
+    choice = np.full(len(scores), reference)
+    undecided = np.ones(len(scores), dtype=bool)
+    for j in order:
+        accept = undecided & available[:, j] & (scores[:, j] >= lam)
+        choice[accept] = j
+        undecided &= ~accept
+    return choice
