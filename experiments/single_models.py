@@ -5,16 +5,19 @@ import numpy as np
 import pandas as pd
 
 from data.data_loader import load
+from router import REFERENCE
 
 RESULTS_DIR = Path(__file__).parent.parent / "results" / "single_models"
 
 def model_table() -> pd.DataFrame:
-    """Accuracy and mean cost per query of each model, cheapest first."""
+    """Accuracy, mean cost and reference regret of each model, cheapest first."""
     data = load()
+    ref = data.models.index(REFERENCE)
     table = pd.DataFrame({
         "model": data.models,
         "accuracy": data.correct.mean(axis=0),
         "mean_cost": np.nanmean(data.cost, axis=0),
+        "reference_regret": (~data.correct & data.correct[:, [ref]]).mean(axis=0),
     })
     return table.sort_values("mean_cost").reset_index(drop=True)
 
