@@ -82,6 +82,25 @@ def plot_plane(table: pd.DataFrame, singles: pd.DataFrame, path: Path) -> None:
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
 
+def plot_traffic(table: pd.DataFrame, models: list[str], path: Path) -> None:
+    """Share of test queries sent to each model against alpha, stacked; models under 5% grouped as other."""
+    main = [m for m in models if m != REFERENCE and table[m].max() >= 0.05]
+    other = [m for m in models if m != REFERENCE and m not in main]
+    shares = [table[REFERENCE]] + [table[m] for m in main] + [table[other].sum(axis=1)]
+    labels = [f"{REFERENCE} (reference)"] + main + ["Other models"]
+    colors = ["#8a8984"] + ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"][:len(main)] + ["#c3c2b7"]
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.stackplot(table["alpha"], [100 * s for s in shares], labels=labels, colors=colors, edgecolor="white", linewidth=0.5)
+    handles, names = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], names[::-1], loc="center left", bbox_to_anchor=(1.01, 0.5))
+    ax.set_xlim(table["alpha"].min(), table["alpha"].max())
+    ax.set_ylim(0, 100)
+    ax.set_xlabel("Target α")
+    ax.set_ylabel("Share of test queries (%)")
+    ax.set_title("Where the router sends test queries, across α")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     table, singles = sweep()
@@ -93,5 +112,7 @@ def main() -> None:
     plot_risk(table, RESULTS_DIR / "risk.png")
     plot_vs_reference(table, singles, RESULTS_DIR / "vs_reference.png")
     plot_plane(table, singles, RESULTS_DIR / "plane.png")
+    plot_traffic(table, singles["model"].tolist(), RESULTS_DIR / "traffic.png")
+        
 if __name__ == "__main__":
     main()
