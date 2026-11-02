@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from data.data_loader import load
 from experiments.common import ALPHAS, DELTA, SEED, choose, evaluate, fit, reference_losses
 from ltt import calibrate
-from router import GRID, load_embeddings
+from router import GRID, load_embeddings, REFERENCE
 
 RESULTS_DIR = Path(__file__).parent.parent / "results" / "alpha_sweep"
 
@@ -23,7 +23,8 @@ def sweep() -> pd.DataFrame:
         choice = choose(data, scores, order, test, GRID[k])
         shares = np.bincount(choice, minlength=len(data.models)) / len(choice)
         rows.append({"alpha": alpha, "lambda_hat": GRID[k], **evaluate(data, test, choice), **dict(zip(data.models, shares))})
-    return pd.DataFrame(rows)
+    singles = pd.DataFrame([{"model": name, **evaluate(data, test, np.full(len(test), j))} for j, name in enumerate(data.models)])
+    return pd.DataFrame(rows), singles
 
 def plot_risk(table: pd.DataFrame, path: Path) -> None:
     """Test risk against the target alpha, with the line risk = alpha."""
@@ -41,14 +42,37 @@ def plot_risk(table: pd.DataFrame, path: Path) -> None:
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
 
+def panel(ax, table: pd.DataFrame, column: str, reference_value: float, ylabel: str, color: str, marker: str) -> None:
+    """One panel: the router's column against alpha, with the reference model's value as a dashed line."""
+    ax.axhline(reference_value, linestyle="--", color="#8a8984", linewidth=1, label=f"Always {REFERENCE}")
+    ax.plot(table["alpha"], table[column], marker + "-", color=color, linewidth=2, markersize=4, label="Router")
+    ax.set_xlabel("Target α")
+    ax.set_ylabel(ylabel)
+    ax.set_xlim(0, 0.31)
+    ax.set_ylim(0, 1.1 * max(reference_value, table[column].max()))
+    ax.legend(loc="lower left")
+    ax.grid(alpha=0.3)
+
+def plot_vs_reference(table: pd.DataFrame, singles: pd.DataFrame, path: Path) -> None:
+    """Router accuracy (left) and mean cost (right) against alpha, next to always using the reference."""
+    reference = singles.set_index("model").loc[REFERENCE]
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.5))
+    panel(left, table, "accuracy", reference["accuracy"], "Test accuracy", "#2a78d6", "o")
+    panel(right, table, "mean_cost", reference["mean_cost"], "Mean cost per query (USD)", "#eb6834", "s")
+    fig.suptitle(f"Router vs always using {REFERENCE}, across α")
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    table = sweep()
+    table, singles = sweep()
     table.to_csv(RESULTS_DIR / "sweep.csv", index=False)
+    singles.to_csv(RESULTS_DIR / "singles.csv", index=False)
     columns = ["alpha", "lambda_hat", "risk", "conditional_risk", "accuracy", "mean_cost", "saving", "routed"]
     headline = table[table["alpha"].isin([0.05, 0.10, 0.15, 0.20, 0.25])]
     print(headline[columns].round(3).to_string(index=False))
     plot_risk(table, RESULTS_DIR / "risk.png")
+    plot_vs_reference(table, singles, RESULTS_DIR / "vs_reference.png")
 
 if __name__ == "__main__":
     main()
