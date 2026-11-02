@@ -63,6 +63,25 @@ def plot_vs_reference(table: pd.DataFrame, singles: pd.DataFrame, path: Path) ->
     fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
 
+def plot_plane(table: pd.DataFrame, singles: pd.DataFrame, path: Path) -> None:
+    """Accuracy against mean cost: every single model on the test rows, and the router's curve over alpha."""
+    plt.figure(figsize=(11, 6))
+    plt.scatter(singles["mean_cost"], singles["accuracy"], color="#52514e", s=20, label="Single models (test set)")
+    for _, row in singles.iterrows():
+        plt.annotate(row["model"], (row["mean_cost"], row["accuracy"]), textcoords="offset points", xytext=(0, 7), ha="center", fontsize=7, color="#52514e")
+    plt.plot(table["mean_cost"], table["accuracy"], "o-", color="#2a78d6", linewidth=2, markersize=4, label="Router (one point per α; α grows from right to left)")
+    ticks = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05]
+    plt.xscale("log")
+    plt.xticks(ticks, [f"${t}" for t in ticks])
+    plt.minorticks_off()
+    plt.xlabel("Mean cost per query (USD, log scale)")
+    plt.ylabel("Test accuracy")
+    plt.title("Router vs single models: accuracy and cost")
+    plt.legend(loc="upper left")
+    plt.grid(alpha=0.3)
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     table, singles = sweep()
@@ -73,6 +92,6 @@ def main() -> None:
     print(headline[columns].round(3).to_string(index=False))
     plot_risk(table, RESULTS_DIR / "risk.png")
     plot_vs_reference(table, singles, RESULTS_DIR / "vs_reference.png")
-
+    plot_plane(table, singles, RESULTS_DIR / "plane.png")
 if __name__ == "__main__":
     main()
