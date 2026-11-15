@@ -74,6 +74,11 @@ close to the reference at a small fraction of its price.
 **Risk control.** Over 100 random splits at a target risk of 0.10
 Full table: `results/repeated_trials/summary.csv`.
 
+**Trade-off.** Each point on the curve is the LTT router at one target `α`,
+averaged over the 100 splits; the dots are single models used alone.
+
+![Regret against cost](results/repeated_trials/tradeoff.png)
+
 ## Data
 
 This project uses the released results of LLMRouterBench
