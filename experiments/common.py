@@ -2,6 +2,7 @@ import numpy as np
 
 from data.data_loader import RoutingData
 from router import REFERENCE, candidate_order, fit_scorer, loss_matrix, route, split
+from ltt import fixed_sequence_test
 
 ALPHAS = np.round(np.linspace(0.01, 0.30, 30), 2)
 DELTA = 0.10
@@ -41,3 +42,8 @@ def evaluate(data: RoutingData, rows: np.ndarray, choice: np.ndarray) -> dict:
         "saving": 1 - mean_cost / data.cost[rows, ref].mean(),
         "routed": routed.mean(),
     }
+
+def uncalibrated(losses: np.ndarray, alpha: float) -> int:
+    """Index of the last lambda before the calibration risk exceeds alpha: LTT walk without the test"""
+    risks = losses.mean(axis=0)
+    return fixed_sequence_test(risks, alpha) - 1
