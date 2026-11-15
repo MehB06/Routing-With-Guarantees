@@ -1,8 +1,8 @@
 import numpy as np
 
 from data.data_loader import RoutingData
-from router import REFERENCE, candidate_order, fit_scorer, loss_matrix, route, split
-from ltt import fixed_sequence_test
+from router import GRID, REFERENCE, candidate_order, fit_scorer, loss_matrix, route, split
+from ltt import calibrate, fixed_sequence_test
 
 ALPHAS = np.round(np.linspace(0.01, 0.30, 30), 2)
 DELTA = 0.10
@@ -47,3 +47,16 @@ def uncalibrated(losses: np.ndarray, alpha: float) -> int:
     """Index of the last lambda before the calibration risk exceeds alpha: LTT walk without the test"""
     risks = losses.mean(axis=0)
     return fixed_sequence_test(risks, alpha) - 1
+
+def run_split(data: RoutingData, embeddings: np.ndarray, seed: int) -> list[dict]:
+    """One split: choose lambda with LTT and with the uncalibrated baseline at every alpha, then evaluate on the test rows"""
+    train, cal, test, scores, order = fit(data, embeddings, seed)
+    losses = reference_losses(data, scores, order, cal)
+    rows = []
+    for alpha in ALPHAS:
+        indices = {"ltt": calibrate(losses, alpha, DELTA), "uncalibrated": uncalibrated(losses, alpha)}
+        for method, k in indices.items():
+            lam = GRID[0] if k is None else GRID[k]
+            choice = choose(data, scores, order, test, lam)
+            rows.append({"seed": seed, "alpha": alpha, "method": method, "lambda_hat": lam, **evaluate(data, test, choice)})
+    return rows
