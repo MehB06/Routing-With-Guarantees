@@ -37,7 +37,7 @@ The probability is over the draw of the calibration set.
 | `ltt.py` | Binomial p-value, fixed-sequence test and calibration |
 | `experiments/common.py` | Shared helpers: fit, calibrate inputs, evaluation |
 | `experiments/single_models.py` | Accuracy, cost and reference regret of each model alone |
-| `experiments/alpha_sweep.py` | Calibrated router across target risks `α` on one split |
+| `experiments/repeated_trials.py` | LTT and an uncalibrated baseline across target risks `α`, over 100 random splits |
 | `tests/` | Unit tests for `ltt.py` and `router.py` |
 | `results/` | Tables and figures written by the experiments |
 
@@ -58,7 +58,7 @@ Run everything from the repository root.
 ```bash
 python -m pytest
 python -m experiments.single_models
-python -m experiments.alpha_sweep
+python -m experiments.repeated_trials
 ```
 
 The first experiment run computes the MiniLM embeddings of all prompts and
@@ -71,10 +71,8 @@ close to the reference at a small fraction of its price.
 
 ![Accuracy against cost for each model](results/single_models/single_models.png)
 
-**Risk control.** On one split, the test risk of the calibrated router stays
-below the target `α` at every value tested. 
-
-![Test risk against target alpha](results/alpha_sweep/risk.png)
+**Risk control.** Over 100 random splits at a target risk of 0.10
+Full table: `results/repeated_trials/summary.csv`.
 
 ## Data
 
