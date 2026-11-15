@@ -71,8 +71,15 @@ close to the reference at a small fraction of its price.
 
 ![Accuracy against cost for each model](results/single_models/single_models.png)
 
-**Risk control.** Over 100 random splits at a target risk of 0.10
+**Risk control.** Over 100 random splits at a target risk of 0.10, the LTT
+router is over the target in 1 split, within the 10 allowed by `δ` = 0.10. An
+uncalibrated router (same walk, no test) is over it in 30.
 Full table: `results/repeated_trials/summary.csv`.
+
+To evaluate the guarantee, the calibration and test parts (40% of the data) are
+pooled into one held-out set. In each split, a calibration set of the usual
+size is drawn at random from it, and the risk of the chosen router is measured
+on all of it.
 
 **Trade-off.** Each point on the curve is the LTT router at one target `α`,
 averaged over the 100 splits; the dots are single models used alone.

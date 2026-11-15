@@ -23,12 +23,10 @@ def trials() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 def summary(table: pd.DataFrame) -> pd.DataFrame:
-    """Per target alpha and method: mean and spread of the test risk, share of splits over the target, share routed and cost saving."""
+    """Number of splits, out of all seeds, where the chosen router's risk is over the target alpha, per method."""
     table = table[table["alpha"].isin([0.05, 0.10, 0.15, 0.20])]
     table = table.assign(over_target=table["risk"] > table["alpha"])
-    columns = {"risk_mean": ("risk", "mean"), "risk_sd": ("risk", "std"), "over_target": ("over_target", "mean"),
-               "routed": ("routed", "mean"), "saving": ("saving", "mean")}
-    return table.groupby(["alpha", "method"]).agg(**columns).round(3).reset_index()
+    return table.pivot_table(index="alpha", columns="method", values="over_target", aggfunc="sum").astype(int).reset_index()
 
 def plot_tradeoff(table: pd.DataFrame, singles: pd.DataFrame, path: Path) -> None:
     """Regret against cost: the LTT router (one point per alpha, mean over the splits) and every single model."""
@@ -53,9 +51,9 @@ def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     table = trials()
     table.to_csv(RESULTS_DIR / "trials.csv", index=False)
-    table = summary(table)
-    table.to_csv(RESULTS_DIR / "summary.csv", index=False)
-    print(table.to_string(index=False))
+    counts = summary(table)
+    counts.to_csv(RESULTS_DIR / "summary.csv", index=False)
+    print(counts.to_string(index=False))
     plot_tradeoff(table, model_table(), RESULTS_DIR / "tradeoff.png")
 
 if __name__ == "__main__":

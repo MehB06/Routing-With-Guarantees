@@ -49,14 +49,16 @@ def uncalibrated(losses: np.ndarray, alpha: float) -> int:
     return fixed_sequence_test(risks, alpha) - 1
 
 def run_split(data: RoutingData, embeddings: np.ndarray, seed: int) -> list[dict]:
-    """One split: choose lambda with LTT and with the uncalibrated baseline at every alpha, then evaluate on the test rows"""
+    """One split: choose lambda with LTT and with the uncalibrated baseline on a random sample of the held-out queries, then measure the result on all held-out queries"""
     train, cal, test, scores, order = fit(data, embeddings, seed)
-    losses = reference_losses(data, scores, order, cal)
+    held_out = np.concatenate([cal, test])                                   
+    sample = np.random.default_rng(seed).choice(held_out, size=len(cal))     
+    losses = reference_losses(data, scores, order, sample)                   
     rows = []
     for alpha in ALPHAS:
         indices = {"ltt": calibrate(losses, alpha, DELTA), "uncalibrated": uncalibrated(losses, alpha)}
         for method, k in indices.items():
             lam = GRID[0] if k is None else GRID[k]
-            choice = choose(data, scores, order, test, lam)
-            rows.append({"seed": seed, "alpha": alpha, "method": method, "lambda_hat": lam, **evaluate(data, test, choice)})
+            choice = choose(data, scores, order, held_out, lam)             
+            rows.append({"seed": seed, "alpha": alpha, "method": method, "lambda_hat": lam, **evaluate(data, held_out, choice)})   
     return rows
