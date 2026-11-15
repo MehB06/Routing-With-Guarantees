@@ -1,3 +1,81 @@
+# Model Routing with Guarantees
+
+Large language models differ widely in price, and many queries do not need
+the most expensive one. This project routes each query to a cheaper model
+when it is safe to do so, and falls back to a strong reference model
+otherwise. The routing threshold is calibrated with Learn Then Test (LTT),
+which gives a statistical guarantee on how often routing costs a correct
+answer compared with always using the reference.
+
+## Method
+
+1. **Scorer.** For each query and model, estimate the chance of a correct
+   answer as the share of the 40 most similar training queries (MiniLM
+   embeddings, kNN) that the model answered correctly.
+2. **Router.** One threshold `λ`. Try the candidate models from cheapest to
+   most expensive and pick the first whose score is above `λ`. If none is,
+   use the reference model (`gemini-2.5-pro`).
+3. **Loss.** A query is a failure when the routed model is wrong and the
+   reference would have been right (reference regret). The risk `R(λ)` is
+   the share of all queries that are failures.
+4. **Calibration.** On held-out calibration queries, test each `λ` from
+   1.00 downwards with an exact binomial p-value and stop at the first one
+   that fails (fixed-sequence testing). The last `λ` that passed is `λ̂`.
+5. **Guarantee.** For a target risk `α` and error level `δ` (0.10 here):
+
+$$\Pr\big(R(\hat\lambda) \le \alpha\big) \ge 1 - \delta$$
+
+The probability is over the draw of the calibration set. 
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `data/data_processing.py` | Builds `data.parquet` from the LLMRouterBench release |
+| `data/data_loader.py` | Loads the data as query x model matrices (`correct`, `cost`) |
+| `router.py` | Split, scorer, candidate order, router and loss matrix |
+| `ltt.py` | Binomial p-value, fixed-sequence test and calibration |
+| `experiments/common.py` | Shared helpers: fit, calibrate inputs, evaluation |
+| `experiments/single_models.py` | Accuracy, cost and reference regret of each model alone |
+| `experiments/alpha_sweep.py` | Calibrated router across target risks `α` on one split |
+| `tests/` | Unit tests for `ltt.py` and `router.py` |
+| `results/` | Tables and figures written by the experiments |
+
+## Setup
+
+Requires Python 3.10 or later.
+
+```bash
+pip install -r requirements.txt
+```
+
+Then download and build the data as described under [Data](#data).
+
+## Running
+
+Run everything from the repository root.
+
+```bash
+python -m pytest
+python -m experiments.single_models
+python -m experiments.alpha_sweep
+```
+
+The first experiment run computes the MiniLM embeddings of all prompts and
+caches them in `data/processed/embeddings.npy`.
+
+## Results
+
+**Single models.** Cost is a poor proxy for quality: some cheap models come
+close to the reference at a small fraction of its price.
+
+![Accuracy against cost for each model](results/single_models/single_models.png)
+
+**Risk control.** On one split, the test risk of the calibrated router stays
+below the target `α` at every value tested. 
+
+![Test risk against target alpha](results/alpha_sweep/risk.png)
+
 ## Data
 
 This project uses the released results of LLMRouterBench
