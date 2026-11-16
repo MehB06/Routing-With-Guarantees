@@ -85,8 +85,7 @@ on all of it.
 on the share of queries sent to the reference, and get the lowest regret that
 respects it. The walk over `λ` starts at 0.00 and moves up. Over the same 100
 splits, the LTT router is over budget in at most 2 splits at every budget, and
-the uncalibrated router in up to 19 splits, the LTT router is over budget in at 
-most 2 splits at every budget, and the uncalibrated router in up to 17.
+the uncalibrated router in up to 17.
 Full table: `results/repeated_trials/summary_cost.csv`.
 
 ![Controlling regret or controlling cost](results/repeated_trials/control.png)
