@@ -37,7 +37,7 @@ The probability is over the draw of the calibration set.
 | `ltt.py` | Binomial p-value, fixed-sequence test and calibration |
 | `experiments/common.py` | Shared helpers: fit, calibrate inputs, evaluation |
 | `experiments/single_models.py` | Accuracy, cost and reference regret of each model alone |
-| `experiments/repeated_trials.py` | LTT and an uncalibrated baseline across target risks `α`, over 100 random splits |
+| `experiments/repeated_trials.py` | LTT and an uncalibrated baseline over 100 random splits, controlling regret (targets `α`) or cost (budgets) |
 | `tests/` | Unit tests for `ltt.py` and `router.py` |
 | `results/` | Tables and figures written by the experiments |
 
@@ -80,6 +80,15 @@ To evaluate the guarantee, the calibration and test parts (40% of the data) are
 pooled into one held-out set. In each split, a calibration set of the usual
 size is drawn at random from it, and the risk of the chosen router is measured
 on all of it.
+
+**Cost control.** The same method also runs the other way round: fix a budget
+on the share of queries sent to the reference, and get the lowest regret that
+respects it. The walk over `λ` starts at 0.00 and moves up. Over the same 100
+splits, the LTT router is over budget in at most 2 splits at every budget, and
+the uncalibrated router in up to 19.
+Full table: `results/repeated_trials/summary_cost.csv`.
+
+![Controlling regret or controlling cost](results/repeated_trials/control.png)
 
 **Trade-off.** Each point on the curve is the LTT router at one target `α`,
 averaged over the 100 splits; the dots are single models used alone.

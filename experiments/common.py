@@ -5,8 +5,8 @@ from router import GRID, REFERENCE, candidate_order, fit_scorer, loss_matrix, ro
 from ltt import calibrate, fixed_sequence_test
 
 ALPHAS = np.round(np.linspace(0.01, 0.30, 30), 2)
+BUDGETS = np.round(np.linspace(0.1, 0.9, 9), 1)
 DELTA = 0.10
-SEED = 0 
 
 def fit(data: RoutingData, embeddings: np.ndarray, seed: int) -> tuple:
     """Split the queries, then fit the scorer and the candidate order on the training rows"""
@@ -43,22 +43,40 @@ def evaluate(data: RoutingData, rows: np.ndarray, choice: np.ndarray) -> dict:
         "routed": routed.mean(),
     }
 
-def uncalibrated(losses: np.ndarray, alpha: float) -> int:
-    """Index of the last lambda before the calibration risk exceeds alpha: LTT walk without the test"""
-    risks = losses.mean(axis=0)
-    return fixed_sequence_test(risks, alpha) - 1
+def uncalibrated(losses: np.ndarray, alpha: float) -> int | None:
+    """Index of the last lambda before the calibration risk exceeds alpha (LTT walk without the test), or None if the first one already does"""
+    k = fixed_sequence_test(losses.mean(axis=0), alpha)
+    return k - 1 if k > 0 else None
 
-def run_split(data: RoutingData, embeddings: np.ndarray, seed: int) -> list[dict]:
-    """One split: choose lambda with LTT and with the uncalibrated baseline on a random sample of the held-out queries, then measure the result on all held-out queries"""
+def setup(data: RoutingData, embeddings: np.ndarray, seed: int) -> tuple:
+    """Fit on train, pool the rest as the held-out queries, and draw the calibration sample from them"""
     train, cal, test, scores, order = fit(data, embeddings, seed)
-    held_out = np.concatenate([cal, test])                                   
-    sample = np.random.default_rng(seed).choice(held_out, size=len(cal))     
-    losses = reference_losses(data, scores, order, sample)                   
+    held_out = np.concatenate([cal, test])
+    sample = np.random.default_rng(seed).choice(held_out, size=len(cal))
+    return held_out, sample, scores, order
+
+def control_regret(data: RoutingData, seed: int, held_out: np.ndarray, sample: np.ndarray, scores: np.ndarray, order: list[int]) -> list[dict]:
+    """Control regret: for every target alpha, choose lambda on the sample with each method, then measure on all held-out queries"""
+    losses = reference_losses(data, scores, order, sample)
     rows = []
     for alpha in ALPHAS:
         indices = {"ltt": calibrate(losses, alpha, DELTA), "uncalibrated": uncalibrated(losses, alpha)}
         for method, k in indices.items():
             lam = GRID[0] if k is None else GRID[k]
-            choice = choose(data, scores, order, held_out, lam)             
-            rows.append({"seed": seed, "alpha": alpha, "method": method, "lambda_hat": lam, **evaluate(data, held_out, choice)})   
+            choice = choose(data, scores, order, held_out, lam)
+            rows.append({"seed": seed, "alpha": alpha, "method": method, "lambda_hat": lam, **evaluate(data, held_out, choice)})
+    return rows
+
+def control_cost(data: RoutingData, seed: int, held_out: np.ndarray, sample: np.ndarray, scores: np.ndarray, order: list[int]) -> list[dict]:
+    """Control cost: for every budget on the share of queries sent to the reference, choose lambda on the sample with each method, then measure on all held-out queries"""
+    ref = data.models.index(REFERENCE)
+    grid = GRID[::-1]
+    losses = np.column_stack([choose(data, scores, order, sample, lam) == ref for lam in grid])
+    rows = []
+    for budget in BUDGETS:
+        indices = {"ltt": calibrate(losses, budget, DELTA), "uncalibrated": uncalibrated(losses, budget)}
+        for method, k in indices.items():
+            lam = grid[0] if k is None else grid[k]
+            choice = choose(data, scores, order, held_out, lam)
+            rows.append({"seed": seed, "budget": budget, "method": method, "lambda_hat": lam, **evaluate(data, held_out, choice)})
     return rows
