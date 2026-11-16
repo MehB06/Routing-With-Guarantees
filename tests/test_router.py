@@ -1,6 +1,5 @@
 import numpy as np
 
-from data.data_loader import load
 from router import candidate_order, route, split, loss_matrix, GRID, fit_scorer
 
 SCORES = np.array([[0.9, 0.8, 0.5],
@@ -11,9 +10,9 @@ AVAILABLE = np.array([[True, True, True],
                       [False, True, True]])
 
 def test_split():
-    datasets = load().queries["dataset_id"].to_numpy()
+    datasets = np.repeat(["a", "b", "c"], [10, 25, 100])
     train, cal, test = split(datasets, seed=0)
-    assert (len(train), len(cal), len(test)) == (7464, 2490, 2492)
+    assert (len(train), len(cal), len(test)) == (81, 27, 27)
 
     together = np.sort(np.concatenate([train, cal, test]))
     assert np.array_equal(together, np.arange(len(datasets)))

@@ -3,9 +3,9 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from data.data_loader import load
+from data.data_loader import load, load_embeddings
 from experiments.common import control_cost, control_regret, setup
-from router import REFERENCE, load_embeddings
+from router import REFERENCE
 from experiments.single_models import model_table
 
 RESULTS_DIR = Path(__file__).parent.parent / "results" / "repeated_trials"
@@ -86,11 +86,11 @@ def plot_control(regret: pd.DataFrame, cost: pd.DataFrame, path: Path) -> None:
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     regret, cost = trials()
-    regret.to_csv(RESULTS_DIR / "trials.csv", index=False)
+    regret.to_csv(RESULTS_DIR / "trials_regret.csv", index=False)
     cost.to_csv(RESULTS_DIR / "trials_cost.csv", index=False)
     over_alpha = summary(regret, "alpha", regret["risk"], [0.05, 0.10, 0.15, 0.20])
     over_budget = summary(cost, "budget", 1 - cost["routed"], [0.2, 0.4, 0.6, 0.8])
-    over_alpha.to_csv(RESULTS_DIR / "summary.csv", index=False)
+    over_alpha.to_csv(RESULTS_DIR / "summary_regret.csv", index=False)
     over_budget.to_csv(RESULTS_DIR / "summary_cost.csv", index=False)
     print(over_alpha.to_string(index=False))
     print(over_budget.to_string(index=False))

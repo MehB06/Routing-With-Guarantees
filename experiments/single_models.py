@@ -35,6 +35,7 @@ def plot(table: pd.DataFrame, path: Path) -> None:
     plt.title("Single model performance")
     plt.grid(alpha=0.3)
     plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
 
 def main() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)

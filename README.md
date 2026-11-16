@@ -32,13 +32,13 @@ The probability is over the draw of the calibration set.
 | Path | Contents |
 | --- | --- |
 | `data/data_processing.py` | Builds `data.parquet` from the LLMRouterBench release |
-| `data/data_loader.py` | Loads the data as query x model matrices (`correct`, `cost`) |
+| `data/data_loader.py` | Loads the data as query x model matrices (correct, cost) and the prompt embeddings |
 | `router.py` | Split, scorer, candidate order, router and loss matrix |
 | `ltt.py` | Binomial p-value, fixed-sequence test and calibration |
 | `experiments/common.py` | Shared helpers: fit, calibrate inputs, evaluation |
 | `experiments/single_models.py` | Accuracy, cost and reference regret of each model alone |
 | `experiments/repeated_trials.py` | LTT and an uncalibrated baseline over 100 random splits, controlling regret (targets `α`) or cost (budgets) |
-| `tests/` | Unit tests for `ltt.py` and `router.py` |
+| `tests/` | Unit tests for `ltt.py`, `router.py`and `experiments/common.py` |
 | `results/` | Tables and figures written by the experiments |
 
 ## Setup
@@ -74,7 +74,7 @@ close to the reference at a small fraction of its price.
 **Risk control.** Over 100 random splits at a target risk of 0.10, the LTT
 router is over the target in 1 split, within the 10 allowed by `δ` = 0.10. An
 uncalibrated router (same walk, no test) is over it in 30.
-Full table: `results/repeated_trials/summary.csv`.
+Full table: `results/repeated_trials/summary_regret.csv`.
 
 To evaluate the guarantee, the calibration and test parts (40% of the data) are
 pooled into one held-out set. In each split, a calibration set of the usual

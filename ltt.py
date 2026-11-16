@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.stats import binom
 
-def binomial_pvalue(failures: int, n: int, alpha: float) -> float:
-    """Probability of at most 'failures' failures in n queries if the true risk is alpha."""
+def binomial_pvalue(failures: np.ndarray, n: int, alpha: float) -> np.ndarray:
+    """Probability of at most 'failures' failures in n queries if the true risk is alpha, one value per failure count."""
     return binom.cdf(failures, n, alpha)
 
 def fixed_sequence_test(pvalues: np.ndarray, delta: float) -> int:

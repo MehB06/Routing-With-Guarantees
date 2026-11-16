@@ -4,10 +4,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from data.data_processing import MODELS, PARQUET_PATH
+from data.data_processing import MODELS, PARQUET_PATH, PROCESSED_DIR
 
 CORRECT_THRESHOLD = 0.5
 QUERY_KEY = ["dataset_id", "record_index"]
+EMBEDDINGS_PATH = PROCESSED_DIR / "embeddings.npy"
 
 @dataclass(frozen=True)
 class RoutingData:
@@ -30,3 +31,13 @@ def load(parquet_path: Path = PARQUET_PATH) -> RoutingData:
     correct = as_matrix("score") >= CORRECT_THRESHOLD
     cost = as_matrix("cost")
     return RoutingData(queries, MODELS, correct, cost)
+
+def load_embeddings(prompts: list[str]) -> np.ndarray:
+    """MiniLM embedding of every prompt (one row each), computed once and cached to disk"""
+    if EMBEDDINGS_PATH.exists():
+        return np.load(EMBEDDINGS_PATH)
+    from sentence_transformers import SentenceTransformer
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = model.encode(prompts, batch_size=64, show_progress_bar=True, normalize_embeddings=True)
+    np.save(EMBEDDINGS_PATH, embeddings)
+    return embeddings
