@@ -55,10 +55,10 @@ def uncalibrated(losses: np.ndarray, alpha: float) -> int | None:
     return k - 1 if k > 0 else None
 
 def setup(data: RoutingData, embeddings: np.ndarray, seed: int) -> tuple:
-    """Fit on train, pool the rest as the held-out queries, and draw the calibration sample from them"""
+    """Fit on train, pool the rest as the held-out queries, and draw the calibration sample from them with replacement, using its own random stream"""
     cal, test, scores, order = fit(data, embeddings, seed)
     held_out = np.concatenate([cal, test])
-    sample = np.random.default_rng(seed).choice(held_out, size=len(cal))
+    sample = np.random.default_rng([seed, 1]).choice(held_out, size=len(cal), replace=True)
     return held_out, sample, scores, order
 
 def control_regret(data: RoutingData, seed: int, held_out: np.ndarray, sample: np.ndarray, scores: np.ndarray, order: list[int]) -> list[dict]:

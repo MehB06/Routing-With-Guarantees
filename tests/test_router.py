@@ -30,6 +30,7 @@ def test_candidate_order():
                      [3.0, np.nan, 5.0, 2.0],
                      [0.0, 9.0, 5.0, 2.0]])
     assert candidate_order(cost, np.array([0, 1]), reference=2) == [1, 3, 0]
+    assert candidate_order(cost, np.array([0, 1]), reference=3) == [1]
 
 def test_route():
     assert route(SCORES, AVAILABLE, [0, 1], 2, 1.0).tolist() == [2, 2, 2]

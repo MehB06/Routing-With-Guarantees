@@ -12,9 +12,9 @@ answer compared with always using the reference.
 1. **Scorer.** For each query and model, estimate the chance of a correct
    answer as the share of the 40 most similar training queries (MiniLM
    embeddings, kNN) that the model answered correctly.
-2. **Router.** One threshold `λ`. Try the candidate models from cheapest to
-   most expensive and pick the first whose score is above `λ`. If none is,
-   use the reference model (`gemini-2.5-pro`).
+2. **Router.** One threshold `λ`. Try the candidate models (those cheaper than
+   the reference) from cheapest to most expensive and pick the first whose
+   score is above `λ`. If none is, use the reference model (`gemini-2.5-pro`).
 3. **Loss.** A query is a failure when the routed model is wrong and the
    reference would have been right (reference regret). The risk `R(λ)` is
    the share of all queries that are failures.
@@ -72,20 +72,21 @@ close to the reference at a small fraction of its price.
 ![Accuracy against cost for each model](results/single_models/single_models.png)
 
 **Risk control.** Over 100 random splits at a target risk of 0.10, the LTT
-router is over the target in 1 split, within the 10 allowed by `δ` = 0.10. An
-uncalibrated router (same walk, no test) is over it in 30.
+router is over the target in 5 splits, within the 10 allowed by `δ` = 0.10. An
+uncalibrated router (same walk, no test) is over it in 31.
 Full table: `results/repeated_trials/summary_regret.csv`.
 
 To evaluate the guarantee, the calibration and test parts (40% of the data) are
 pooled into one held-out set. In each split, a calibration set of the usual
-size is drawn at random from it, and the risk of the chosen router is measured
+size is drawn at random from it, with replacement, and the risk of the chosen router is measured
 on all of it.
 
 **Cost control.** The same method also runs the other way round: fix a budget
 on the share of queries sent to the reference, and get the lowest regret that
 respects it. The walk over `λ` starts at 0.00 and moves up. Over the same 100
 splits, the LTT router is over budget in at most 2 splits at every budget, and
-the uncalibrated router in up to 19.
+the uncalibrated router in up to 19 splits, the LTT router is over budget in at 
+most 2 splits at every budget, and the uncalibrated router in up to 17.
 Full table: `results/repeated_trials/summary_cost.csv`.
 
 ![Controlling regret or controlling cost](results/repeated_trials/control.png)

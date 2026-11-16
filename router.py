@@ -18,9 +18,9 @@ def split(datasets: np.ndarray, seed: int) -> tuple[np.ndarray, np.ndarray, np.n
     return np.concatenate(train), np.concatenate(cal), np.concatenate(test)
 
 def candidate_order(cost: np.ndarray, train: np.ndarray, reference: int) -> list[int]:
-    """Model indices other than the reference, cheapest first by mean cost on the training rows"""
+    """Model indices strictly cheaper than the reference by mean cost on the training rows, cheapest first"""
     mean_cost = np.nanmean(cost[train], axis=0)
-    return [int(j) for j in np.argsort(mean_cost) if j != reference]
+    return [int(j) for j in np.argsort(mean_cost) if mean_cost[j] < mean_cost[reference]]
 
 def route(scores: np.ndarray, available: np.ndarray, order: list[int], reference: int, lam: float) -> np.ndarray:
     """Chosen model per query: the first available candidate in order with score > lam, else the reference model"""
